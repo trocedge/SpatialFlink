@@ -39,8 +39,8 @@ JNIEXPORT jdoubleArray JNICALL Java_GeoFlink_utils_RvvDistanceCalculator_calcula
     // 3. Main loop for RVV-based computation
     size_t gvl; // Group vector length
     for (size_t i = 0; i < n; i += gvl) {
-        // 尝试不同的 vsetvl 函数名
-        gvl = __riscv_vsetvl_e64m8(n - i); // 使用 __riscv_ 前缀
+        
+        gvl = __riscv_vsetvl_e64m8(n - i); // Set vector length for this iteration
 
         // Load stream coordinates into vector registers
         vfloat64m8_t vec_x = __riscv_vle64_v_f64m8(&streamX[i], gvl);
