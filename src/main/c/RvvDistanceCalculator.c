@@ -9,11 +9,11 @@
  * Signature: (DD[D[D)[D
  */
 JNIEXPORT jdoubleArray JNICALL Java_GeoFlink_utils_RvvDistanceCalculator_calculateDistances(
-    JNIEnv *env, 
-    jclass cls, 
-    jdouble qx, 
-    jdouble qy, 
-    jdoubleArray streamX_j, 
+    JNIEnv *env,
+    jclass cls,
+    jdouble qx,
+    jdouble qy,
+    jdoubleArray streamX_j,
     jdoubleArray streamY_j) {
 
     // 1. Get pointers to the Java arrays
@@ -39,30 +39,31 @@ JNIEXPORT jdoubleArray JNICALL Java_GeoFlink_utils_RvvDistanceCalculator_calcula
     // 3. Main loop for RVV-based computation
     size_t gvl; // Group vector length
     for (size_t i = 0; i < n; i += gvl) {
-        gvl = vsetvl_e64m8(n - i); // Set vector length for this iteration
+        // 尝试不同的 vsetvl 函数名
+        gvl = __riscv_vsetvl_e64m8(n - i); // 使用 __riscv_ 前缀
 
         // Load stream coordinates into vector registers
-        vfloat64m8_t vec_x = vle64_v_f64m8(&streamX[i], gvl);
-        vfloat64m8_t vec_y = vle64_v_f64m8(&streamY[i], gvl);
+        vfloat64m8_t vec_x = __riscv_vle64_v_f64m8(&streamX[i], gvl);
+        vfloat64m8_t vec_y = __riscv_vle64_v_f64m8(&streamY[i], gvl);
 
         // Calculate dx = streamX - qx
-        vfloat64m8_t vec_dx = vfsub_vf_f64m8(vec_x, qx, gvl);
+        vfloat64m8_t vec_dx = __riscv_vfsub_vf_f64m8(vec_x, qx, gvl);
         // Calculate dy = streamY - qy
-        vfloat64m8_t vec_dy = vfsub_vf_f64m8(vec_y, qy, gvl);
+        vfloat64m8_t vec_dy = __riscv_vfsub_vf_f64m8(vec_y, qy, gvl);
 
         // Calculate dx*dx
-        vfloat64m8_t vec_dx_sq = vfmul_vv_f64m8(vec_dx, vec_dx, gvl);
+        vfloat64m8_t vec_dx_sq = __riscv_vfmul_vv_f64m8(vec_dx, vec_dx, gvl);
         // Calculate dy*dy
-        vfloat64m8_t vec_dy_sq = vfmul_vv_f64m8(vec_dy, vec_dy, gvl);
+        vfloat64m8_t vec_dy_sq = __riscv_vfmul_vv_f64m8(vec_dy, vec_dy, gvl);
 
         // Calculate dist_sq = dx*dx + dy*dy
-        vfloat64m8_t vec_dist_sq = vfadd_vv_f64m8(vec_dx_sq, vec_dy_sq, gvl);
+        vfloat64m8_t vec_dist_sq = __riscv_vfadd_vv_f64m8(vec_dx_sq, vec_dy_sq, gvl);
 
         // Calculate dist = sqrt(dist_sq)
-        vfloat64m8_t vec_dist = vfsqrt_v_f64m8(vec_dist_sq, gvl);
+        vfloat64m8_t vec_dist = __riscv_vfsqrt_v_f64m8(vec_dist_sq, gvl);
 
         // Store results back to the distances array
-        vse64_v_f64m8(&distances[i], vec_dist, gvl);
+        __riscv_vse64_v_f64m8(&distances[i], vec_dist, gvl);
     }
 
     // 4. Release arrays and return the result
